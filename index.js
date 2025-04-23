@@ -10,7 +10,7 @@ const port = process.env.PORT || 3000;
 app.use(bodyParser.json());
 
 // Inisialisasi Firebase Admin SDK
-const serviceAccount = require('./serviceAccountKey.json');
+const serviceAccountString = process.env.SERVICE_ACCOUNT_KEY;
 
 firebaseAdmin.initializeApp({
   credential: firebaseAdmin.credential.cert(serviceAccount)

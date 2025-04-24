@@ -1,25 +1,27 @@
-import express from 'express';
-import admin from 'firebase-admin';
-import cors from 'cors';
+const express = require('express');
+const bodyParser = require('body-parser');
+const admin = require('firebase-admin');
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+const port = process.env.PORT || 3000;
 
-// ✅ Load Firebase credentials from environment variable
+app.use(bodyParser.json());
+
+// Inisialisasi Firebase Admin SDK
 const serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+// const serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT_KEY);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
-// 🔁 Routes
-app.get('/', (req, res) => {
-  res.send('✅ FCM Backend is running!');
-});
-
-app.post('/send-notification', async (req, res) => {
+// Endpoint untuk mengirim notifikasi
+app.post('/send', async (req, res) => {
   const { token, title, body } = req.body;
+
+  if (!token || !title || !body) {
+    return res.status(400).send({ error: 'Missing token, title, or body' });
+  }
 
   const message = {
     notification: { title, body },
@@ -28,14 +30,18 @@ app.post('/send-notification', async (req, res) => {
 
   try {
     const response = await admin.messaging().send(message);
-    res.status(200).json({ success: true, messageId: response });
+    res.status(200).send({ success: true, messageId: response });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    console.error('Error sending message:', error);
+    res.status(500).send({ error: 'Error sending message' });
   }
 });
 
-// 🌐 Start server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`✅ Server is running on port ${PORT}`);
+// Endpoint root untuk pengecekan
+app.get('/', (req, res) => {
+  res.send('Backend Firebase Notification aktif');
+});
+
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });

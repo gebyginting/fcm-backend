@@ -1,50 +1,40 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const firebaseAdmin = require('firebase-admin');
+import express from 'express';
+import admin from 'firebase-admin';
+import cors from 'cors';
+import fs from 'fs';
 
-// Inisialisasi Express
 const app = express();
-const port = process.env.PORT || 3000;
+app.use(cors());
+app.use(express.json());
 
-// Gunakan bodyParser untuk memparse JSON
-app.use(bodyParser.json());
+// Load service account key from file
+const serviceAccount = JSON.parse(fs.readFileSync('./serviceAccountKey.json', 'utf8'));
 
-// Inisialisasi Firebase Admin SDK
-const serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT_KEY);
-
-firebaseAdmin.initializeApp({
-  credential: firebaseAdmin.credential.cert(serviceAccount)
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
 });
 
-// Endpoint untuk mengirim pesan
-app.post('/send', async (req, res) => {
+app.get('/', (req, res) => {
+  res.send('✅ FCM Backend is running!');
+});
+
+app.post('/send-notification', async (req, res) => {
   const { token, title, body } = req.body;
 
-  // Cek jika data ada
-  if (!token || !title || !body) {
-    return res.status(400).send({ error: 'Missing token, title, or body' });
-  }
-
   const message = {
-    notification: {
-      title: title,
-      body: body
-    },
-    token: token
+    notification: { title, body },
+    token,
   };
 
   try {
-    // Kirim notifikasi menggunakan Firebase Admin SDK
-    const response = await firebaseAdmin.messaging().send(message);
-    console.log('Successfully sent message:', response);
-    res.status(200).send({ success: true, messageId: response });
+    const response = await admin.messaging().send(message);
+    res.status(200).json({ success: true, messageId: response });
   } catch (error) {
-    console.error('Error sending message:', error);
-    res.status(500).send({ error: 'Error sending message' });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// Start server
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`✅ Server is running on port ${PORT}`);
 });

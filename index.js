@@ -1,19 +1,19 @@
 import express from 'express';
 import admin from 'firebase-admin';
 import cors from 'cors';
-import fs from 'fs';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Load service account key from file
-const serviceAccount = JSON.parse(fs.readFileSync('./serviceAccountKey.json', 'utf8'));
+// ✅ Load Firebase credentials from environment variable
+const serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
+// 🔁 Routes
 app.get('/', (req, res) => {
   res.send('✅ FCM Backend is running!');
 });
@@ -34,6 +34,7 @@ app.post('/send-notification', async (req, res) => {
   }
 });
 
+// 🌐 Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Server is running on port ${PORT}`);
